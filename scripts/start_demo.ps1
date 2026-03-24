@@ -4,6 +4,9 @@ param(
 )
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = Split-Path -Parent $scriptDir
+$backendDir = Join-Path $rootDir "backend"
+$hostProjectPath = Join-Path $rootDir "dotnet\host\VfpWebViewHost.csproj"
 $healthUrl = "http://$BindHost`:$Port/health"
 
 function Test-Backend {
@@ -18,7 +21,7 @@ function Test-Backend {
     }
 }
 
-Set-Location $scriptDir
+Set-Location $rootDir
 
 if (-not (Test-Backend -Url $healthUrl)) {
     $pythonCommand = Get-Command python -ErrorAction Stop
@@ -26,7 +29,7 @@ if (-not (Test-Backend -Url $healthUrl)) {
     Start-Process `
         -FilePath $pythonCommand.Source `
         -ArgumentList @("-m", "uvicorn", "main:app", "--host", $BindHost, "--port", $Port.ToString()) `
-        -WorkingDirectory $scriptDir
+        -WorkingDirectory $backendDir
 
     $backendReady = $false
     for ($i = 0; $i -lt 12; $i++) {
@@ -42,4 +45,4 @@ if (-not (Test-Backend -Url $healthUrl)) {
     }
 }
 
-dotnet run --project (Join-Path $scriptDir "VfpWebViewHost.csproj")
+dotnet run --project $hostProjectPath

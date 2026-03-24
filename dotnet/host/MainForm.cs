@@ -238,7 +238,7 @@ namespace VfpWebViewHost
   <section class="card">
     <h1>{{{encodedTitle}}}</h1>
     <p>{{{encodedDetail}}}</p>
-    <p>Prueba iniciar el backend con <code>start_backend.bat</code> o <code>start_demo.ps1</code> y luego pulsa <code>Reintentar</code>.</p>
+    <p>Prueba iniciar el backend con <code>scripts\start_backend.bat</code> o <code>scripts\start_demo.ps1</code> y luego pulsa <code>Reintentar</code>.</p>
   </section>
 </body>
 </html>

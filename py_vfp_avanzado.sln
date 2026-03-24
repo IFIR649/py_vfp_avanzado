@@ -2,9 +2,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VfpWebViewBridge", "VfpWebViewBridge.csproj", "{2DA1E687-C01C-BBE2-F9D4-D9CCEFBA8A1D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VfpWebViewBridge", "dotnet\bridge\VfpWebViewBridge.csproj", "{2DA1E687-C01C-BBE2-F9D4-D9CCEFBA8A1D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VfpWebViewHost", "VfpWebViewHost.csproj", "{9CF61D0A-86C4-8BAD-596E-F0C24A752D4C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VfpWebViewHost", "dotnet\host\VfpWebViewHost.csproj", "{9CF61D0A-86C4-8BAD-596E-F0C24A752D4C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

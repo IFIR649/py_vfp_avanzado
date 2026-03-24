@@ -22,21 +22,21 @@ FUNCTION BridgeInitForm
     ENDIF
 
     IF !PEMSTATUS(toForm, "cBackendBat", 5)
-        toForm.AddProperty("cBackendBat", ADDBS(lcProjectDir) + "start_backend.bat")
+        toForm.AddProperty("cBackendBat", ADDBS(lcProjectDir) + "scripts\start_backend.bat")
     ELSE
-        toForm.cBackendBat = ADDBS(lcProjectDir) + "start_backend.bat"
+        toForm.cBackendBat = ADDBS(lcProjectDir) + "scripts\start_backend.bat"
     ENDIF
 
     IF !PEMSTATUS(toForm, "cStartDemoPs1", 5)
-        toForm.AddProperty("cStartDemoPs1", ADDBS(lcProjectDir) + "start_demo.ps1")
+        toForm.AddProperty("cStartDemoPs1", ADDBS(lcProjectDir) + "scripts\start_demo.ps1")
     ELSE
-        toForm.cStartDemoPs1 = ADDBS(lcProjectDir) + "start_demo.ps1"
+        toForm.cStartDemoPs1 = ADDBS(lcProjectDir) + "scripts\start_demo.ps1"
     ENDIF
 
     IF !PEMSTATUS(toForm, "cHostExe", 5)
-        toForm.AddProperty("cHostExe", ADDBS(lcProjectDir) + "bin\Debug\net8.0-windows\VfpWebViewHost.exe")
+        toForm.AddProperty("cHostExe", ADDBS(lcProjectDir) + "dotnet\host\bin\Debug\net8.0-windows\VfpWebViewHost.exe")
     ELSE
-        toForm.cHostExe = ADDBS(lcProjectDir) + "bin\Debug\net8.0-windows\VfpWebViewHost.exe"
+        toForm.cHostExe = ADDBS(lcProjectDir) + "dotnet\host\bin\Debug\net8.0-windows\VfpWebViewHost.exe"
     ENDIF
 
     IF !PEMSTATUS(toForm, "cWebViewProgId", 5)
@@ -46,9 +46,9 @@ FUNCTION BridgeInitForm
     ENDIF
 
     IF !PEMSTATUS(toForm, "cRegisterBridgePs1", 5)
-        toForm.AddProperty("cRegisterBridgePs1", ADDBS(lcProjectDir) + "register_vfp_webview_bridge.ps1")
+        toForm.AddProperty("cRegisterBridgePs1", ADDBS(lcProjectDir) + "scripts\register_vfp_webview_bridge.ps1")
     ELSE
-        toForm.cRegisterBridgePs1 = ADDBS(lcProjectDir) + "register_vfp_webview_bridge.ps1"
+        toForm.cRegisterBridgePs1 = ADDBS(lcProjectDir) + "scripts\register_vfp_webview_bridge.ps1"
     ENDIF
 
     IF !PEMSTATUS(toForm, "oWebViewHost", 5)
@@ -341,7 +341,7 @@ FUNCTION HandleStartBridge
 
     IF !BackendAlive(toForm.cBaseUrl)
         IF StartBackend(toForm.cProjectDir)
-            AppendLog(toForm, "Backend lanzado con start_backend.bat.")
+            AppendLog(toForm, "Backend lanzado con scripts\start_backend.bat.")
         ELSE
             AppendLog(toForm, "No se pudo lanzar el backend.")
             UpdateStatus(toForm, "Error al lanzar backend", .F.)
@@ -512,7 +512,7 @@ FUNCTION StartBackend
 
     LOCAL lcBatch, loShell, lcCommand, llOk
 
-    lcBatch = ADDBS(tcProjectDir) + "start_backend.bat"
+    lcBatch = ADDBS(tcProjectDir) + "scripts\start_backend.bat"
     IF !FILE(lcBatch)
         RETURN .F.
     ENDIF

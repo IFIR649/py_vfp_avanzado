@@ -7,11 +7,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectPath = Join-Path $scriptDir "VfpWebViewBridge.csproj"
+$rootDir = Split-Path -Parent $scriptDir
+$projectPath = Join-Path $rootDir "dotnet\bridge\VfpWebViewBridge.csproj"
+$projectDir = Split-Path -Parent $projectPath
 
 dotnet build $projectPath -c $Configuration
 
-$outputDir = Join-Path $scriptDir ("bin\" + $Configuration + "\net8.0-windows")
+$outputDir = Join-Path $projectDir ("bin\" + $Configuration + "\net8.0-windows")
 $comHostPath = Join-Path $outputDir "VfpWebViewBridge.comhost.dll"
 $regsvr32Path = Join-Path $env:WINDIR "SysWOW64\regsvr32.exe"
 

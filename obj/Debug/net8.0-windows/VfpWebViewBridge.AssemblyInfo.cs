@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VfpWebViewBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a4340851340a3b24da5cd40731fe7dfe3d471ca0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c940eb32110e975ea8bb405bb239e7f6f5a2d2a0")]
 [assembly: System.Reflection.AssemblyProductAttribute("VfpWebViewBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VfpWebViewBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
