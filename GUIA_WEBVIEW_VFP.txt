@@ -1,0 +1,390 @@
+GUIA DE USO DEL WEBVIEW2 EMBEBIDO EN VISUAL FOXPRO
+==================================================
+
+1. OBJETIVO
+-----------
+Este proyecto permite mostrar una UI web moderna dentro de un formulario de Visual FoxPro usando:
+
+- Un backend local en Python/FastAPI
+- Un bridge COM en .NET x86
+- Un contenedor embebido dentro del form de VFP
+
+El formulario de VFP no renderiza HTML por si solo. Lo que hace es:
+
+1. Levantar el backend local
+2. Crear el bridge COM
+3. Incrustar WebView2 dentro del propio formulario
+4. Enviar contexto y mensajes al backend
+
+
+2. ESTRUCTURA DEL PROYECTO
+--------------------------
+Raiz del repo:
+
+- backend\
+  - main.py
+  - requirements.txt
+
+- dotnet\bridge\
+  - VfpWebViewBridge.csproj
+  - VfpWebViewBridgeHost.cs
+
+- dotnet\host\
+  - VfpWebViewHost.csproj
+  - MainForm.cs
+  - Program.cs
+
+- scripts\
+  - start_backend.bat
+  - start_demo.ps1
+  - register_vfp_webview_bridge.ps1
+
+- vfp_local_bridge.prg
+- FORMS\
+
+
+3. REQUISITOS
+-------------
+Necesitas lo siguiente en la maquina donde se ejecuta VFP:
+
+1. Python disponible en PATH
+2. Dependencias Python instaladas
+3. .NET Desktop Runtime / SDK compatible para compilar o ejecutar el bridge
+4. WebView2 Runtime instalado en Windows
+5. El bridge COM registrado
+
+Instalacion de dependencias Python:
+
+    python -m pip install -r backend\requirements.txt
+
+Compilacion del bridge COM:
+
+    dotnet build .\dotnet\bridge\VfpWebViewBridge.csproj -c Debug
+
+Registro del bridge COM:
+
+    .\scripts\register_vfp_webview_bridge.ps1
+
+Nota:
+El script anterior pide elevacion porque usa regsvr32 sobre:
+
+    dotnet\bridge\bin\Debug\net8.0-windows\VfpWebViewBridge.comhost.dll
+
+
+4. QUE HACE EL BRIDGE VFP
+-------------------------
+El archivo principal de integracion es:
+
+    vfp_local_bridge.prg
+
+Funciones importantes:
+
+- BridgeInitForm(toForm, tcBridgePath)
+  Inicializa el formulario, agrega propiedades, crea controles auxiliares y programa el autoinicio.
+
+- BridgeDestroyForm(toForm)
+  Libera el host embebido al cerrar el formulario.
+
+- HandleStartBridge(toForm)
+  Inicia backend y embebe la UI.
+
+- HandleSendContext(toForm)
+  Envia el JSON del contexto a /api/context.
+
+- HandleSendChat(toForm)
+  Envia el mensaje a /api/chat.
+
+- HandleOpenUi(toForm)
+  Reintenta cargar la UI embebida si el backend ya esta arriba.
+
+
+5. COMPORTAMIENTO ACTUAL
+------------------------
+El flujo actual es este:
+
+1. Se llama BridgeInitForm(thisform, FULLPATH("vfp_local_bridge.prg"))
+2. El PRG construye una UI diagnostica dentro del formulario
+3. Se programa un Timer interno para autoiniciar el bridge
+4. El Timer llama a HandleStartBridge()
+5. HandleStartBridge():
+   - ejecuta scripts\start_backend.bat si el backend no esta arriba
+   - espera a que /health responda
+   - crea el COM VfpWebViewBridge.Host
+   - embebe WebView2 dentro del formulario
+
+Resultado:
+No necesitas ejecutar manualmente scripts\start_demo.ps1 para el flujo dentro de VFP.
+
+El archivo scripts\start_demo.ps1 ahora solo sirve para pruebas desde terminal:
+
+- .\scripts\start_demo.ps1
+  Solo asegura que el backend este arriba
+
+- .\scripts\start_demo.ps1 -OpenHost
+  Levanta backend y tambien el host WinForms externo
+
+
+6. COMO USARLO EN UN FORM DE VFP
+--------------------------------
+La forma mas simple es usar un formulario y llamar al PRG desde los eventos del form.
+
+RECOMENDACION:
+Usa este patron minimo:
+
+Evento Init del formulario:
+
+    DO vfp_local_bridge.prg
+    =BridgeInitForm(thisform, FULLPATH("vfp_local_bridge.prg"))
+
+Evento Destroy del formulario:
+
+    DO vfp_local_bridge.prg
+    =BridgeDestroyForm(thisform)
+
+Con eso el bridge:
+
+- agrega propiedades al form
+- crea el contenedor visual para WebView2
+- crea el timer de autoinicio
+- intenta levantar backend + UI embebida solo
+
+
+7. REQUISITO IMPORTANTE DEL FORM
+--------------------------------
+El PRG usa directamente:
+
+    thisform.Command1
+
+para convertirlo en el boton "Iniciar bridge".
+
+Por eso, tu formulario debe tener un control llamado:
+
+    Command1
+
+Si tu form no lo tiene, tienes dos opciones:
+
+1. Agregar manualmente un CommandButton llamado Command1
+2. Modificar vfp_local_bridge.prg para que cree ese boton si no existe
+
+Si ya estas usando el formulario de ejemplo del repo, esto ya viene resuelto.
+
+
+8. PROPIEDADES QUE EL PRG AGREGA AL FORM
+----------------------------------------
+Durante BridgeInitForm(), el PRG agrega propiedades como:
+
+- cBaseUrl
+- cProjectDir
+- cBridgePath
+- cBackendBat
+- cStartDemoPs1
+- cHostExe
+- cWebViewProgId
+- cRegisterBridgePs1
+- oWebViewHost
+- lAutoStartScheduled
+- lBackendReady
+- oBridgeEvents
+
+No necesitas crearlas a mano.
+
+
+9. CONTROLES QUE EL PRG CREA EN EL FORM
+---------------------------------------
+Ademas de reusar Command1, el PRG crea y acomoda:
+
+- cmdHealth
+- cmdSendContext
+- cmdSendChat
+- cmdOpenUi
+- lblStatus
+- edtContextJson
+- edtChatMessage
+- cntBrowserHost
+- edtLog
+- tmrAutoStart
+
+El control clave para incrustar WebView2 es:
+
+    cntBrowserHost
+
+Ese contenedor es el area donde el COM embebe el navegador.
+
+
+10. COMO ENVIAR CONTEXTO Y MENSAJES
+-----------------------------------
+El bridge diagnostico ya deja controles para probar:
+
+- Contexto JSON
+- Mensaje de chat
+- Log
+
+Si quieres llamar las funciones manualmente desde codigo VFP:
+
+Enviar contexto:
+
+    DO vfp_local_bridge.prg
+    =HandleSendContext(thisform)
+
+Enviar chat:
+
+    DO vfp_local_bridge.prg
+    =HandleSendChat(thisform)
+
+Abrir o recargar la UI:
+
+    DO vfp_local_bridge.prg
+    =HandleOpenUi(thisform)
+
+Iniciar bridge manualmente:
+
+    DO vfp_local_bridge.prg
+    =HandleStartBridge(thisform)
+
+
+11. FORMATO DEL CONTEXTO
+------------------------
+El endpoint /api/context espera un JSON parecido a este:
+
+    {
+      "source_app": "vfp_demo",
+      "user_id": "alex",
+      "filters": {
+        "sucursal": "Centro",
+        "fecha_inicio": "2026-03-01",
+        "fecha_fin": "2026-03-24"
+      },
+      "dataset_info": {
+        "filename": "reporte_filtrado.csv",
+        "row_count": 1245,
+        "columns": ["fecha", "sucursal", "ventas"]
+      }
+    }
+
+Ese ejemplo ya lo genera internamente BuildSampleContext().
+
+
+12. PRUEBA MANUAL RECOMENDADA
+-----------------------------
+Antes de integrar en otro formulario VFP, valida esto:
+
+1. Instala dependencias Python
+2. Compila el bridge COM
+3. Ejecuta:
+
+       .\scripts\register_vfp_webview_bridge.ps1
+
+4. Abre el form VFP
+5. Verifica en el log:
+   - "Autoinicio del bridge programado."
+   - "Autoiniciando backend y UI embebida..."
+   - "GET /health -> backend listo."
+   - "Bridge COM creado: VfpWebViewBridge.Host"
+   - "UI WebView2 embebida en el formulario."
+
+
+13. FLUJO DE USO EN PRODUCCION
+------------------------------
+Flujo normal esperado:
+
+1. El usuario abre el form VFP
+2. El form llama a BridgeInitForm()
+3. El timer interno dispara el arranque
+4. VFP levanta el backend automaticamente
+5. El WebView2 aparece embebido dentro del form
+6. El usuario puede enviar contexto y mensajes
+
+No hace falta:
+
+- abrir scripts\start_demo.ps1 manualmente
+- abrir el host WinForms externo
+
+
+14. TROUBLESHOOTING
+-------------------
+A. Error: "Bridge COM no disponible"
+
+Causa comun:
+El COM no esta registrado.
+
+Solucion:
+
+    .\scripts\register_vfp_webview_bridge.ps1
+
+
+B. Error: "Unable to load DLL 'WebView2Loader.dll'"
+
+Causa comun:
+El bridge no estaba copiando o resolviendo bien el loader nativo.
+
+Estado actual:
+Ya esta resuelto en el proyecto actual. Si reaparece:
+
+1. recompila:
+
+       dotnet build .\dotnet\bridge\VfpWebViewBridge.csproj -c Debug
+
+2. vuelve a registrar el COM
+3. cierra VFP por completo
+4. vuelve a abrir VFP
+
+
+C. Error: backend sin respuesta
+
+Revisa:
+
+1. Python disponible en PATH
+2. dependencias instaladas
+3. que el puerto 8765 no este bloqueado
+4. que scripts\start_backend.bat funcione desde terminal
+
+
+D. El WebView2 no aparece pero el log dice que el backend esta arriba
+
+Revisa:
+
+1. que WebView2 Runtime este instalado
+2. que el COM este registrado
+3. que el form tenga Command1
+4. que no exista un error nuevo en el log
+
+
+15. PRUEBA RAPIDA DESDE TERMINAL
+--------------------------------
+Probar solo backend:
+
+    .\scripts\start_demo.ps1
+
+Probar backend + host externo:
+
+    .\scripts\start_demo.ps1 -OpenHost
+
+Probar backend directo:
+
+    .\scripts\start_backend.bat
+
+
+16. MINIMO CODIGO DE INTEGRACION
+--------------------------------
+Ejemplo recomendado en un formulario VFP:
+
+Init:
+
+    DO vfp_local_bridge.prg
+    =BridgeInitForm(thisform, FULLPATH("vfp_local_bridge.prg"))
+
+Destroy:
+
+    DO vfp_local_bridge.prg
+    =BridgeDestroyForm(thisform)
+
+Con eso ya debe arrancar solo.
+
+
+17. NOTAS FINALES
+-----------------
+- El backend actual guarda estado en memoria. Si reinicias el backend, se pierde contexto y chat.
+- El endpoint /api/chat hoy responde con logica demo. Puedes reemplazar build_reply() en backend\main.py por integracion real con IA.
+- El bridge COM esta orientado a VFP x86.
+- El host de dotnet\host\ es solo de prueba. El flujo principal para VFP es el bridge COM embebido.
+

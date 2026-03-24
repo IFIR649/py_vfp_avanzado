@@ -34,7 +34,12 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8765
 ```powershell
 .\scripts\start_demo.ps1
 ```
-`scripts/start_demo.ps1` checks `/health` first; if the backend is already running it skips launching it. It then runs `dotnet run --project dotnet/host/VfpWebViewHost.csproj`.
+`scripts/start_demo.ps1` checks `/health` first; if the backend is already running it skips launching it. By default it only ensures the backend is up.
+
+To launch the standalone WinForms host as well:
+```powershell
+.\scripts\start_demo.ps1 -OpenHost
+```
 
 ### Build the C# host
 ```

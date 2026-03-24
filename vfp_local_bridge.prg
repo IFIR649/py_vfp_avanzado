@@ -57,6 +57,12 @@ FUNCTION BridgeInitForm
         toForm.oWebViewHost = .NULL.
     ENDIF
 
+    IF !PEMSTATUS(toForm, "lAutoStartScheduled", 5)
+        toForm.AddProperty("lAutoStartScheduled", .F.)
+    ELSE
+        toForm.lAutoStartScheduled = .F.
+    ENDIF
+
     IF !PEMSTATUS(toForm, "lBackendReady", 5)
         toForm.AddProperty("lBackendReady", .F.)
     ELSE
@@ -91,6 +97,12 @@ FUNCTION BridgeInitForm
     ELSE
         UpdateStatus(toForm, "Backend detenido", .F.)
         AppendLog(toForm, "GET /health -> sin respuesta.")
+    ENDIF
+
+    IF PEMSTATUS(toForm, "tmrAutoStart", 5)
+        toForm.lAutoStartScheduled = .T.
+        toForm.tmrAutoStart.Enabled = .T.
+        AppendLog(toForm, "Autoinicio del bridge programado.")
     ENDIF
 
     RETURN .T.
@@ -283,6 +295,15 @@ FUNCTION BuildDiagnosticUi
         .ReadOnly = .T.
         .Visible = .T.
     ENDWITH
+
+    IF !PEMSTATUS(toForm, "tmrAutoStart", 5)
+        toForm.AddObject("tmrAutoStart", "Timer")
+    ENDIF
+    WITH toForm.tmrAutoStart
+        .Interval = 750
+        .Enabled = .F.
+    ENDWITH
+    =BINDEVENT(toForm.tmrAutoStart, "Timer", toForm.oBridgeEvents, "OnAutoStart")
 
     =LayoutDiagnosticUi(toForm)
     toForm.Refresh()
@@ -497,6 +518,32 @@ FUNCTION HandleFormResize
     ENDIF
 
     RETURN LayoutDiagnosticUi(toForm)
+ENDFUNC
+
+FUNCTION HandleAutoStart
+    LPARAMETERS toForm
+
+    IF VARTYPE(toForm) # "O"
+        RETURN .F.
+    ENDIF
+
+    IF PEMSTATUS(toForm, "tmrAutoStart", 5)
+        toForm.tmrAutoStart.Enabled = .F.
+    ENDIF
+
+    IF PEMSTATUS(toForm, "lAutoStartScheduled", 5)
+        IF !toForm.lAutoStartScheduled
+            RETURN .T.
+        ENDIF
+        toForm.lAutoStartScheduled = .F.
+    ENDIF
+
+    IF VARTYPE(toForm.oWebViewHost) = "O"
+        RETURN .T.
+    ENDIF
+
+    AppendLog(toForm, "Autoiniciando backend y UI embebida...")
+    RETURN HandleStartBridge(toForm)
 ENDFUNC
 
 FUNCTION BackendAlive
@@ -889,6 +936,12 @@ DEFINE CLASS BridgeEventSink AS Custom
     PROCEDURE OnFormDestroy
         IF VARTYPE(THIS.oForm) = "O"
             =BridgeDestroyForm(THIS.oForm)
+        ENDIF
+    ENDPROC
+
+    PROCEDURE OnAutoStart
+        IF VARTYPE(THIS.oForm) = "O"
+            =HandleAutoStart(THIS.oForm)
         ENDIF
     ENDPROC
 ENDDEFINE

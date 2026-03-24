@@ -1,6 +1,7 @@
 param(
     [string]$BindHost = "127.0.0.1",
-    [int]$Port = 8765
+    [int]$Port = 8765,
+    [switch]$OpenHost
 )
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -45,4 +46,9 @@ if (-not (Test-Backend -Url $healthUrl)) {
     }
 }
 
-dotnet run --project $hostProjectPath
+if ($OpenHost) {
+    dotnet run --project $hostProjectPath
+}
+else {
+    Write-Host "Backend listo en $healthUrl"
+}
