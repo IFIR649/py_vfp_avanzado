@@ -1,2 +1,7 @@
 fastapi==0.135.2
 uvicorn==0.42.0
+
+winget search --id Microsoft.PowerShell
+winget install --id Microsoft.PowerShell --source winget
+https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.201/dotnet-sdk-10.0.201-win-x64.exe
+https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.25/windowsdesktop-runtime-8.0.25-win-x86.exe

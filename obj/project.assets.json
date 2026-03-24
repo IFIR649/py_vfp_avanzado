@@ -129,19 +129,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Alexis\\.nuget\\packages\\": {}
+    "C:\\Users\\PROGRAMADOR01\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\vfppython\\py_sin_x32\\VfpWebViewHost.csproj",
+      "projectUniqueName": "C:\\n8n\\py_vfp_avanzado\\VfpWebViewHost.csproj",
       "projectName": "VfpWebViewHost",
-      "projectPath": "E:\\vfppython\\py_sin_x32\\VfpWebViewHost.csproj",
-      "packagesPath": "C:\\Users\\Alexis\\.nuget\\packages\\",
-      "outputPath": "E:\\vfppython\\py_sin_x32\\obj\\",
+      "projectPath": "C:\\n8n\\py_vfp_avanzado\\VfpWebViewHost.csproj",
+      "packagesPath": "C:\\Users\\PROGRAMADOR01\\.nuget\\packages\\",
+      "outputPath": "C:\\n8n\\py_vfp_avanzado\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Alexis\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\PROGRAMADOR01\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0-windows"
@@ -164,7 +164,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net8.0-windows7.0": {
@@ -186,6 +187,24 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.25, 8.0.25]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Host.win-x86",
+            "version": "[8.0.25, 8.0.25]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[8.0.25, 8.0.25]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.25, 8.0.25]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
@@ -194,7 +213,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.415/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

@@ -1,10 +1,10 @@
 param(
-    [string]$Host = "127.0.0.1",
+    [string]$BindHost = "127.0.0.1",
     [int]$Port = 8765
 )
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$healthUrl = "http://$Host`:$Port/health"
+$healthUrl = "http://$BindHost`:$Port/health"
 
 function Test-Backend {
     param([string]$Url)
@@ -25,7 +25,7 @@ if (-not (Test-Backend -Url $healthUrl)) {
 
     Start-Process `
         -FilePath $pythonCommand.Source `
-        -ArgumentList @("-m", "uvicorn", "main:app", "--host", $Host, "--port", $Port.ToString()) `
+        -ArgumentList @("-m", "uvicorn", "main:app", "--host", $BindHost, "--port", $Port.ToString()) `
         -WorkingDirectory $scriptDir
 
     $backendReady = $false

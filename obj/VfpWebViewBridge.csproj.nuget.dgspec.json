@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "C:\\n8n\\py_vfp_avanzado\\VfpWebViewHost.csproj": {}
+    "C:\\n8n\\py_vfp_avanzado\\VfpWebViewBridge.csproj": {}
   },
   "projects": {
-    "C:\\n8n\\py_vfp_avanzado\\VfpWebViewHost.csproj": {
+    "C:\\n8n\\py_vfp_avanzado\\VfpWebViewBridge.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\n8n\\py_vfp_avanzado\\VfpWebViewHost.csproj",
-        "projectName": "VfpWebViewHost",
-        "projectPath": "C:\\n8n\\py_vfp_avanzado\\VfpWebViewHost.csproj",
+        "projectUniqueName": "C:\\n8n\\py_vfp_avanzado\\VfpWebViewBridge.csproj",
+        "projectName": "VfpWebViewBridge",
+        "projectPath": "C:\\n8n\\py_vfp_avanzado\\VfpWebViewBridge.csproj",
         "packagesPath": "C:\\Users\\PROGRAMADOR01\\.nuget\\packages\\",
         "outputPath": "C:\\n8n\\py_vfp_avanzado\\obj\\",
         "projectStyle": "PackageReference",
@@ -46,7 +46,8 @@
           "dependencies": {
             "Microsoft.Web.WebView2": {
               "target": "Package",
-              "version": "[1.0.3856.49, )"
+              "version": "[1.0.3856.49, )",
+              "generatePathProperty": true
             }
           },
           "imports": [

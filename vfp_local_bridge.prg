@@ -39,6 +39,24 @@ FUNCTION BridgeInitForm
         toForm.cHostExe = ADDBS(lcProjectDir) + "bin\Debug\net8.0-windows\VfpWebViewHost.exe"
     ENDIF
 
+    IF !PEMSTATUS(toForm, "cWebViewProgId", 5)
+        toForm.AddProperty("cWebViewProgId", "VfpWebViewBridge.Host")
+    ELSE
+        toForm.cWebViewProgId = "VfpWebViewBridge.Host"
+    ENDIF
+
+    IF !PEMSTATUS(toForm, "cRegisterBridgePs1", 5)
+        toForm.AddProperty("cRegisterBridgePs1", ADDBS(lcProjectDir) + "register_vfp_webview_bridge.ps1")
+    ELSE
+        toForm.cRegisterBridgePs1 = ADDBS(lcProjectDir) + "register_vfp_webview_bridge.ps1"
+    ENDIF
+
+    IF !PEMSTATUS(toForm, "oWebViewHost", 5)
+        toForm.AddProperty("oWebViewHost", .NULL.)
+    ELSE
+        toForm.oWebViewHost = .NULL.
+    ENDIF
+
     IF !PEMSTATUS(toForm, "lBackendReady", 5)
         toForm.AddProperty("lBackendReady", .F.)
     ELSE
@@ -56,6 +74,8 @@ FUNCTION BridgeInitForm
     ENDIF
 
     BuildDiagnosticUi(toForm)
+    =BINDEVENT(toForm, "Resize", toForm.oBridgeEvents, "OnFormResize")
+    =BINDEVENT(toForm, "Destroy", toForm.oBridgeEvents, "OnFormDestroy")
 
     toForm.edtContextJson.Value = BuildSampleContext()
     toForm.edtChatMessage.Value = "Prueba desde VFP"
@@ -81,6 +101,7 @@ FUNCTION BridgeDestroyForm
 
     IF VARTYPE(toForm) = "O"
         AppendLog(toForm, "Cierre del formulario.")
+        =ReleaseWebViewHost(toForm)
     ENDIF
 
     RETURN .T.
@@ -153,7 +174,7 @@ FUNCTION BuildDiagnosticUi
         .Left = 504
         .Width = 110
         .Height = 32
-        .Caption = "Abrir UI"
+        .Caption = "Cargar UI"
         .Visible = .T.
     ENDWITH
     =BINDEVENT(toForm.cmdOpenUi, "Click", toForm.oBridgeEvents, "OnOpenUi")
@@ -214,11 +235,36 @@ FUNCTION BuildDiagnosticUi
         .Visible = .T.
     ENDWITH
 
+    IF !PEMSTATUS(toForm, "lblBrowserTitle", 5)
+        toForm.AddObject("lblBrowserTitle", "Label")
+    ENDIF
+    WITH toForm.lblBrowserTitle
+        .Top = 92
+        .Left = 552
+        .Caption = "UI embebida"
+        .AutoSize = .T.
+        .Visible = .T.
+    ENDWITH
+
+    IF !PEMSTATUS(toForm, "cntBrowserHost", 5)
+        toForm.AddObject("cntBrowserHost", "Container")
+    ENDIF
+    WITH toForm.cntBrowserHost
+        .Top = 114
+        .Left = 550
+        .Width = 520
+        .Height = 350
+        .Visible = .T.
+        .BackColor = RGB(255, 255, 255)
+        .BorderWidth = 1
+        .SpecialEffect = 1
+    ENDWITH
+
     IF !PEMSTATUS(toForm, "lblLogTitle", 5)
         toForm.AddObject("lblLogTitle", "Label")
     ENDIF
     WITH toForm.lblLogTitle
-        .Top = 92
+        .Top = 482
         .Left = 552
         .Caption = "Log"
         .AutoSize = .T.
@@ -229,17 +275,60 @@ FUNCTION BuildDiagnosticUi
         toForm.AddObject("edtLog", "EditBox")
     ENDIF
     WITH toForm.edtLog
-        .Top = 114
+        .Top = 504
         .Left = 550
         .Width = 520
-        .Height = 560
+        .Height = 170
         .ScrollBars = 2
         .ReadOnly = .T.
         .Visible = .T.
     ENDWITH
 
+    =LayoutDiagnosticUi(toForm)
     toForm.Refresh()
 
+    RETURN .T.
+ENDFUNC
+
+FUNCTION LayoutDiagnosticUi
+    LPARAMETERS toForm
+
+    LOCAL lnRightLeft, lnRightWidth, lnBrowserTop, lnBrowserHeight, lnLogTop, lnLogHeight, lnFormWidth, lnFormHeight
+
+    lnFormWidth = MAX(1100, toForm.Width)
+    lnFormHeight = MAX(760, toForm.Height)
+    lnRightLeft = 550
+    lnRightWidth = MAX(320, lnFormWidth - lnRightLeft - 30)
+    lnBrowserTop = 114
+    lnBrowserHeight = MAX(260, lnFormHeight - 390)
+    lnLogTop = lnBrowserTop + lnBrowserHeight + 40
+    lnLogHeight = MAX(120, lnFormHeight - lnLogTop - 54)
+
+    IF PEMSTATUS(toForm, "lblBrowserTitle", 5)
+        toForm.lblBrowserTitle.Left = lnRightLeft + 2
+        toForm.lblBrowserTitle.Top = 92
+    ENDIF
+
+    IF PEMSTATUS(toForm, "cntBrowserHost", 5)
+        toForm.cntBrowserHost.Left = lnRightLeft
+        toForm.cntBrowserHost.Top = lnBrowserTop
+        toForm.cntBrowserHost.Width = lnRightWidth
+        toForm.cntBrowserHost.Height = lnBrowserHeight
+    ENDIF
+
+    IF PEMSTATUS(toForm, "lblLogTitle", 5)
+        toForm.lblLogTitle.Left = lnRightLeft + 2
+        toForm.lblLogTitle.Top = lnLogTop - 22
+    ENDIF
+
+    IF PEMSTATUS(toForm, "edtLog", 5)
+        toForm.edtLog.Left = lnRightLeft
+        toForm.edtLog.Top = lnLogTop
+        toForm.edtLog.Width = lnRightWidth
+        toForm.edtLog.Height = lnLogHeight
+    ENDIF
+
+    =ResizeEmbeddedWebView(toForm)
     RETURN .T.
 ENDFUNC
 
@@ -274,10 +363,10 @@ FUNCTION HandleStartBridge
     AppendLog(toForm, "GET /health -> backend listo.")
     UpdateStatus(toForm, "Backend listo", .T.)
 
-    IF StartWebViewHost(toForm.cProjectDir, .F.)
-        AppendLog(toForm, "Host WebView2 lanzado.")
+    IF StartWebViewHost(toForm, .F.)
+        AppendLog(toForm, "UI WebView2 embebida en el formulario.")
     ELSE
-        AppendLog(toForm, "No se pudo lanzar el host WebView2.")
+        AppendLog(toForm, "No se pudo inicializar la UI embebida.")
         UpdateStatus(toForm, "Error al lanzar UI", .T.)
         RETURN .F.
     ENDIF
@@ -389,15 +478,25 @@ FUNCTION HandleOpenUi
         RETURN .F.
     ENDIF
 
-    IF StartWebViewHost(toForm.cProjectDir, .F.)
-        AppendLog(toForm, "UI lanzada.")
+    IF StartWebViewHost(toForm, .F.)
+        AppendLog(toForm, "UI embebida cargada.")
         UpdateStatus(toForm, "UI abierta", .T.)
         RETURN .T.
     ENDIF
 
-    AppendLog(toForm, "No se pudo lanzar la UI.")
+    AppendLog(toForm, "No se pudo cargar la UI embebida.")
     UpdateStatus(toForm, "Error al abrir UI", .T.)
     RETURN .F.
+ENDFUNC
+
+FUNCTION HandleFormResize
+    LPARAMETERS toForm
+
+    IF VARTYPE(toForm) # "O"
+        RETURN .F.
+    ENDIF
+
+    RETURN LayoutDiagnosticUi(toForm)
 ENDFUNC
 
 FUNCTION BackendAlive
@@ -432,32 +531,126 @@ FUNCTION StartBackend
 ENDFUNC
 
 FUNCTION StartWebViewHost
-    LPARAMETERS tcProjectDir, tlUseDotnetRun
+    LPARAMETERS toForm, tlUseDotnetRun
 
-    LOCAL lcHostExe, lcPowerShell, lcCommand, loShell, llOk
-
-    lcHostExe = ADDBS(tcProjectDir) + "bin\Debug\net8.0-windows\VfpWebViewHost.exe"
-    lcPowerShell = ADDBS(tcProjectDir) + "start_demo.ps1"
+    LOCAL loHost, lcUrl, llOk, lcError
 
     llOk = .F.
-    TRY
-        loShell = CREATEOBJECT("WScript.Shell")
+    lcError = ""
 
-        IF !tlUseDotnetRun .AND. FILE(lcHostExe)
-            loShell.Run(QuotePath(lcHostExe), 1, .F.)
-            llOk = .T.
-        ELSE
-            IF FILE(lcPowerShell)
-                lcCommand = "powershell.exe -ExecutionPolicy Bypass -File " + QuotePath(lcPowerShell)
-                loShell.Run(lcCommand, 1, .F.)
-                llOk = .T.
-            ENDIF
+    IF VARTYPE(toForm) # "O"
+        RETURN .F.
+    ENDIF
+
+    =LayoutDiagnosticUi(toForm)
+
+    IF VARTYPE(toForm.oWebViewHost) # "O"
+        TRY
+            toForm.oWebViewHost = CREATEOBJECT(toForm.cWebViewProgId)
+            AppendLog(toForm, "Bridge COM creado: " + toForm.cWebViewProgId)
+        CATCH TO loEx
+            lcError = loEx.Message
+            toForm.oWebViewHost = .NULL.
+        ENDTRY
+    ENDIF
+
+    loHost = toForm.oWebViewHost
+    IF VARTYPE(loHost) # "O"
+        IF EMPTY(lcError)
+            lcError = "No se pudo crear el bridge COM."
         ENDIF
-    CATCH
+
+        AppendLog(toForm, "Bridge COM no disponible: " + lcError)
+        IF FILE(toForm.cRegisterBridgePs1)
+            AppendLog(toForm, "Registra el COM con: " + toForm.cRegisterBridgePs1)
+        ENDIF
+        RETURN .F.
+    ENDIF
+
+    lcUrl = NormalizeBaseUrl(toForm.cBaseUrl) + "/ui"
+
+    TRY
+        llOk = loHost.Attach(toForm.HWnd, toForm.cntBrowserHost.Left, toForm.cntBrowserHost.Top, toForm.cntBrowserHost.Width, toForm.cntBrowserHost.Height, lcUrl)
+    CATCH TO loEx
         llOk = .F.
+        lcError = loEx.Message
     ENDTRY
 
+    IF !llOk
+        IF EMPTY(lcError)
+            lcError = GetWebViewHostLastError(loHost)
+        ENDIF
+
+        IF EMPTY(lcError)
+            lcError = "Error desconocido al adjuntar WebView2."
+        ENDIF
+
+        AppendLog(toForm, "Bridge COM fallo: " + lcError)
+        RETURN .F.
+    ENDIF
+
+    RETURN .T.
+ENDFUNC
+
+FUNCTION ResizeEmbeddedWebView
+    LPARAMETERS toForm
+
+    LOCAL llOk, lcError
+
+    IF VARTYPE(toForm) # "O" OR VARTYPE(toForm.oWebViewHost) # "O"
+        RETURN .F.
+    ENDIF
+
+    llOk = .F.
+    lcError = ""
+
+    TRY
+        llOk = toForm.oWebViewHost.Resize(toForm.cntBrowserHost.Left, toForm.cntBrowserHost.Top, toForm.cntBrowserHost.Width, toForm.cntBrowserHost.Height)
+    CATCH TO loEx
+        llOk = .F.
+        lcError = loEx.Message
+    ENDTRY
+
+    IF !llOk .AND. !EMPTY(lcError)
+        AppendLog(toForm, "No se pudo reajustar WebView2: " + lcError)
+    ENDIF
+
     RETURN llOk
+ENDFUNC
+
+FUNCTION ReleaseWebViewHost
+    LPARAMETERS toForm
+
+    IF VARTYPE(toForm) # "O" OR VARTYPE(toForm.oWebViewHost) # "O"
+        RETURN .T.
+    ENDIF
+
+    TRY
+        toForm.oWebViewHost.Destroy()
+    CATCH
+    ENDTRY
+
+    toForm.oWebViewHost = .NULL.
+    RETURN .T.
+ENDFUNC
+
+FUNCTION GetWebViewHostLastError
+    LPARAMETERS toHost
+
+    LOCAL lcError
+
+    lcError = ""
+    IF VARTYPE(toHost) # "O"
+        RETURN lcError
+    ENDIF
+
+    TRY
+        lcError = TRANSFORM(toHost.LastError)
+    CATCH
+        lcError = ""
+    ENDTRY
+
+    RETURN lcError
 ENDFUNC
 
 FUNCTION WaitForBackend
@@ -684,6 +877,18 @@ DEFINE CLASS BridgeEventSink AS Custom
     PROCEDURE OnOpenUi
         IF VARTYPE(THIS.oForm) = "O"
             =HandleOpenUi(THIS.oForm)
+        ENDIF
+    ENDPROC
+
+    PROCEDURE OnFormResize
+        IF VARTYPE(THIS.oForm) = "O"
+            =HandleFormResize(THIS.oForm)
+        ENDIF
+    ENDPROC
+
+    PROCEDURE OnFormDestroy
+        IF VARTYPE(THIS.oForm) = "O"
+            =BridgeDestroyForm(THIS.oForm)
         ENDIF
     ENDPROC
 ENDDEFINE
